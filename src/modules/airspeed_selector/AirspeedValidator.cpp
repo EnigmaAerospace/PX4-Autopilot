@@ -60,8 +60,8 @@ AirspeedValidator::update_airspeed_validator(const airspeed_validator_update_dat
 	check_load_factor(input_data.accel_z);
 	check_airspeed_innovation(input_data.timestamp, input_data.vel_test_ratio, input_data.hdg_test_ratio,
 				  input_data.ground_velocity, input_data.gnss_valid);
-	check_first_principle(input_data.timestamp, input_data.fixed_wing_throttle_filtered,
-			      input_data.fixed_wing_tecs_throttle_trim, input_data.tecs_timestamp, input_data.q_att);
+	check_first_principle(input_data.timestamp, input_data.throttle_sp_filtered,
+			      input_data.throttle_trim, input_data.tecs_timestamp, input_data.q_att);
 	update_airspeed_valid_status(input_data.timestamp);
 }
 
