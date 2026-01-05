@@ -32,6 +32,7 @@
  ****************************************************************************/
 
 #include "rgbled.hpp"
+#include <lib/mathlib/mathlib.h>
 
 UavcanRGBController::UavcanRGBController(uavcan::INode &node) :
 	ModuleParams(nullptr),
@@ -44,6 +45,16 @@ UavcanRGBController::UavcanRGBController(uavcan::INode &node) :
 
 int UavcanRGBController::init()
 {
+	// Cache parameter handles for LED IDs based on LED_EN value
+	const int32_t led_enable = _param_led_enable.get();
+	_num_leds = math::min(static_cast<uint8_t>(led_enable), MAX_LEDS);
+
+	for (uint8_t i = 0; i < _num_leds; i++) {
+		char param_name[20];
+		snprintf(param_name, sizeof(param_name), "UAVCAN_LED_ID%u", i);
+		_led_id_params[i] = param_find(param_name);
+	}
+
 	// Setup timer and call back function for periodic updates
 	_timer.setCallback(TimerCbBinder(this, &UavcanRGBController::periodic_update));
 	_timer.startPeriodic(uavcan::MonotonicDuration::fromMSec(1000 / MAX_RATE_HZ));
@@ -52,6 +63,11 @@ int UavcanRGBController::init()
 
 void UavcanRGBController::periodic_update(const uavcan::TimerEvent &)
 {
+	// Check if UAVCAN LEDs are enabled (LED_EN changes require reboot)
+	if (_num_leds == 0) {
+		return;
+	}
+
 	bool publish_lights = false;
 	uavcan::equipment::indication::LightsCommand cmds;
 
@@ -119,8 +135,14 @@ void UavcanRGBController::periodic_update(const uavcan::TimerEvent &)
 			break;
 		}
 
-		cmds.commands.push_back(cmd);
-
+		for (uint8_t i = 0; i < _num_leds; i++) {
+			if (_led_id_params[i] != PARAM_INVALID) {
+				int32_t light_id = 0;
+				param_get(_led_id_params[i], &light_id);
+				cmd.light_id = static_cast<uint8_t>(light_id);
+				cmds.commands.push_back(cmd);
+			}
+		}
 	}
 
 	if (_armed_sub.updated()) {

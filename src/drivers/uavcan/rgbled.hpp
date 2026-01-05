@@ -69,7 +69,12 @@ private:
 
 	LedController _led_controller;
 
+	static constexpr uint8_t MAX_LEDS = 8;
+	param_t _led_id_params[MAX_LEDS] {};
+	uint8_t _num_leds{0};
+
 	DEFINE_PARAMETERS(
+		(ParamInt<px4::params::UAVCAN_LED_EN>) _param_led_enable,
 		(ParamInt<px4::params::UAVCAN_LGT_ANTCL>) _param_mode_anti_col,
 		(ParamInt<px4::params::UAVCAN_LGT_STROB>) _param_mode_strobe,
 		(ParamInt<px4::params::UAVCAN_LGT_NAV>) _param_mode_nav,

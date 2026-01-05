@@ -1,3 +1,5 @@
+__max_uavcan_leds: &max_uavcan_leds 8
+
 module_name: UAVCAN
 parameters:
 - group: UAVCAN
@@ -24,6 +26,32 @@ parameters:
       min: 1
       max: 255
       reboot_required: true
+    UAVCAN_LED_EN:
+      description:
+        short: Enable UAVCAN LEDs with custom light_id values
+        long: |
+          Enables sending LED commands with custom light_id values.
+          Set to 0 to completely disable UAVCAN LED publishing.
+          Set to 1 (default) for standard mode with single LED using light_id from UAVCAN_LED_ID0.
+          Set to N (2-8) to enable N custom LEDs using UAVCAN_LED_ID0 through UAVCAN_LED_ID(N-1).
+          Each enabled LED will use its configured light_id value from the corresponding UAVCAN_LED_IDx parameter.
+      type: int32
+      min: 0
+      max: 8
+      default: 1
+      reboot_required: true
+    UAVCAN_LED_ID${i}:
+      description:
+        short: UAVCAN LED ${i} light_id
+        long: |
+          light_id value for LED ${i} in UAVCAN LightsCommand messages.
+          This allows addressing specific LEDs on UAVCAN devices with multiple LEDs.
+      type: int32
+      num_instances: *max_uavcan_leds
+      instance_start: 0
+      min: 0
+      max: 255
+      default: 0
 actuator_output:
   show_subgroups_if: 'UAVCAN_ENABLE>=3'
   config_parameters:
