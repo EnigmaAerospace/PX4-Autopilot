@@ -841,26 +841,64 @@ float AirspeedModule::get_synthetic_airspeed(float throttle)
 void AirspeedModule::update_throttle_filter(hrt_abstime now)
 {
 	if (_vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
-		vehicle_thrust_setpoint_s vehicle_thrust_setpoint_0{};
-		_vehicle_thrust_setpoint_0_sub.copy(&vehicle_thrust_setpoint_0);
 
-		float forward_thrust = vehicle_thrust_setpoint_0.xyz[0];
+		float throttle_sp;
 
-		// if VTOL, use the total thrust vector length (otherwise needs special handling for tailsitters and tiltrotors)
-		if (_vehicle_status.is_vtol) {
-			forward_thrust = sqrtf(vehicle_thrust_setpoint_0.xyz[0] * vehicle_thrust_setpoint_0.xyz[0] +
-					       vehicle_thrust_setpoint_0.xyz[1] * vehicle_thrust_setpoint_0.xyz[1] +
-					       vehicle_thrust_setpoint_0.xyz[2] * vehicle_thrust_setpoint_0.xyz[2]);
+		// We have two options for getting the throttle value:
+		//  - tecs_status.throttle_sp
+		//     - higher level, without battery scaling
+		//     - only available in fixed wing
+		//  - vehicle_thrust_setpoint_0
+		//     - lower level, with battery scaling
+		//     - available also in transitions
+
+		// The filtered throttle value is used for both synthetic
+		// airspeed estimation and airspeed failure detection.
+
+		// For failure detection, we must to use the TECS throttle
+		// setpoint to correctly compare against the TECS trim throttle.
+
+		// For synthetic airspeed, the TECS setpoint is also
+		// preferred, because it more closely matches what the vehicle
+		// does -- when the battery depletes and we command higher
+		// thrust to compensate for it the vehicle does not
+		// accelerate.
+
+		// However, to ensure horizontal aiding during VTOL transitions
+		// (preventing optical flow failsafes), we fall back to the raw
+		// vehicle_thrust_setpoint when TECS is not active.
+
+		if (_time_now_usec - _tecs_status.timestamp < 20_ms) {
+
+			throttle_sp = _tecs_status.throttle_sp;
+
+		} else {
+
+			vehicle_thrust_setpoint_s vehicle_thrust_setpoint_0{};
+			_vehicle_thrust_setpoint_0_sub.copy(&vehicle_thrust_setpoint_0);
+
+			throttle_sp = vehicle_thrust_setpoint_0.xyz[0];
+
+			if (_vehicle_status.is_vtol) {
+				// Use the total thrust vector length (otherwise
+				// needs special handling for tailsitters and
+				// tiltrotors)
+				throttle_sp = sqrtf(vehicle_thrust_setpoint_0.xyz[0] * vehicle_thrust_setpoint_0.xyz[0] +
+						    vehicle_thrust_setpoint_0.xyz[1] * vehicle_thrust_setpoint_0.xyz[1] +
+						    vehicle_thrust_setpoint_0.xyz[2] * vehicle_thrust_setpoint_0.xyz[2]);
+
+			}
+
 		}
 
 		const float dt = static_cast<float>(now - _t_last_throttle_fw) * 1e-6f;
 		_t_last_throttle_fw = now;
 
 		if (dt < FLT_EPSILON || dt > 1.f) {
-			_throttle_filtered.reset(forward_thrust);
+			_throttle_filtered.reset(throttle_sp);
 
 		} else {
-			_throttle_filtered.update(forward_thrust, dt);
+			_throttle_filtered.update(throttle_sp, dt);
 		}
 	}
 }
