@@ -80,6 +80,7 @@ void Sih::run()
 					    static_cast<int32_t>(VehicleType::Last)));
 
 	_actuator_out_sub = uORB::Subscription{ORB_ID(actuator_outputs_sim)};
+	_gripper_sub = uORB::Subscription{ORB_ID(gripper)};
 
 #if defined(ENABLE_LOCKSTEP_SCHEDULER)
 	lockstep_loop();
@@ -209,6 +210,8 @@ void Sih::sensor_step()
 	const float dt = (now - _last_run) * 1e-6f;
 	_last_run = now;
 
+	update_mass();
+
 	read_motors(dt);
 
 	generate_force_and_torques(dt);
@@ -268,7 +271,7 @@ void Sih::parameters_updated()
 		_q_E.normalize();
 	}
 
-	_MASS = _sih_mass.get();
+	_VEHICLE_MASS = _sih_mass.get();
 
 	_I = diag(Vector3f(_sih_ixx.get(), _sih_iyy.get(), _sih_izz.get()));
 	_I(0, 1) = _I(1, 0) = _sih_ixy.get();
@@ -283,6 +286,9 @@ void Sih::parameters_updated()
 	_distance_snsr_override = _sih_distance_snsr_override.get();
 
 	_T_TAU = _sih_thrust_tau.get();
+
+	_has_gripper = _sih_has_gripper.get();
+	_PAYLOAD_MASS = _sih_payload_mass.get();
 }
 
 void Sih::init_variables()
@@ -299,6 +305,33 @@ void Sih::init_variables()
 	_w_B = Vector3f(0.0f, 0.0f, 0.0f);
 
 	_u[0] = _u[1] = _u[2] = _u[3] = 0.0f;
+}
+
+void Sih::update_mass()
+{
+	if (_has_gripper) {
+		// update the gripper state
+		gripper_s gripper;
+		if (_gripper_sub.update(&gripper)) {
+			if (gripper.command == gripper_s::COMMAND_RELEASE) {
+				_gripper_closed = false;
+
+			} else if (gripper.command == gripper_s::COMMAND_GRAB) {
+				_gripper_closed = true; 
+
+			}
+		}
+		// update the vehicle mass depending on whether a payload is attached
+		if (_has_gripper && _gripper_closed) {
+			_MASS = _VEHICLE_MASS + _PAYLOAD_MASS;
+
+		} else {
+			_MASS = _VEHICLE_MASS;
+		}
+	} else {
+		_MASS = _VEHICLE_MASS;
+	}
+
 }
 
 void Sih::read_motors(const float dt)

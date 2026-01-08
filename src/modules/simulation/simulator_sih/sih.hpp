@@ -75,6 +75,7 @@
 #include <uORB/topics/airspeed.h>
 #include <uORB/topics/actuator_outputs.h>
 #include <uORB/topics/distance_sensor.h>
+#include <uORB/topics/gripper.h>
 #include <uORB/topics/vehicle_angular_velocity.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_global_position.h>
@@ -132,6 +133,7 @@ private:
 
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 	uORB::Subscription _actuator_out_sub{ORB_ID(actuator_outputs)};
+	uORB::Subscription _gripper_sub{ORB_ID(gripper)};
 
 	// hard constants
 	static constexpr uint16_t NUM_ACTUATORS_MAX = 9;
@@ -146,6 +148,9 @@ private:
 	static constexpr float FLAP_MAX = M_PI_F / 12.0f; // 15 deg, maximum control surface deflection
 
 	void init_variables();
+
+	// update the vehicle mass depending on whether a payload is attached
+	void update_mass();
 
 	// read the motor signals outputted from the mixer
 	void read_motors(const float dt);
@@ -272,11 +277,15 @@ private:
 	// parameters
 	MapProjection _lpos_ref{};
 	float _lpos_ref_alt;
-	float _MASS, _T_MAX, _Q_MAX, _L_ROLL, _L_PITCH, _KDV, _KDW, _T_TAU;
+	float _MASS, _VEHICLE_MASS, _T_MAX, _Q_MAX, _L_ROLL, _L_PITCH, _KDV, _KDW, _T_TAU;
 	matrix::Matrix3f _I;    // vehicle inertia matrix
 	matrix::Matrix3f _Im1;  // inverse of the inertia matrix
 
 	float _distance_snsr_min, _distance_snsr_max, _distance_snsr_override;
+
+	float _PAYLOAD_MASS{0.0f}; // additional payload mass
+	int32_t _has_gripper{0};   // whether a gripper is attached
+	bool _gripper_closed{false}; // whether the gripper is closed
 
 	// parameters defined in sih_params.c
 	DEFINE_PARAMETERS(
@@ -302,6 +311,8 @@ private:
 		(ParamFloat<px4::params::SIH_DISTSNSR_MAX>) _sih_distance_snsr_max,
 		(ParamFloat<px4::params::SIH_DISTSNSR_OVR>) _sih_distance_snsr_override,
 		(ParamFloat<px4::params::SIH_T_TAU>) _sih_thrust_tau,
-		(ParamInt<px4::params::SIH_VEHICLE_TYPE>) _sih_vtype
+		(ParamInt<px4::params::SIH_VEHICLE_TYPE>) _sih_vtype,
+		(ParamFloat<px4::params::SIH_PAYLOAD_MASS>) _sih_payload_mass,
+		(ParamInt<px4::params::SIH_HAS_GRIPPER>) _sih_has_gripper
 	)
 };

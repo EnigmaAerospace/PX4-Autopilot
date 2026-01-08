@@ -340,3 +340,24 @@ PARAM_DEFINE_FLOAT(SIH_T_TAU, 0.05f);
  * @group Simulation In Hardware
  */
 PARAM_DEFINE_INT32(SIH_VEHICLE_TYPE, 0);
+
+/**
+ * Has a gripper with a droppable payload
+ *
+ * If the gripper is closed during flight, the payload mass (SIH_PAYLOAD_MASS) is added to the vehicle mass.
+ *
+ * @value 0 No gripper with payload
+ * @value 1 Has a gripper with payload
+ * @group Simulation In Hardware
+ */
+PARAM_DEFINE_INT32(SIH_HAS_GRIPPER, 0);
+
+/**
+ * payload mass in kg
+ *
+ * if the vehicle has a gripper with payload (SIH_HAS_PAYLOAD=1), this parameter defines the payload mass that is dropped when the gripper is opened
+ *
+ * @unit kg
+ * @group Simulation In Hardware
+ */
+PARAM_DEFINE_FLOAT(SIH_PAYLOAD_MASS, 0.0f);
