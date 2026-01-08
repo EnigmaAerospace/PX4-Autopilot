@@ -162,6 +162,7 @@ private:
 	void send_dist_snsr(const hrt_abstime &time_now_us);
 	void publish_ground_truth(const hrt_abstime &time_now_us);
 	void generate_fw_aerodynamics(const float roll_cmd, const float pitch_cmd, const float yaw_cmd, const float thrust);
+	void generate_phoenix_aerodynamics(const float roll_cmd, const float pitch_cmd, const float yaw_cmd, const float thrust);
 	void generate_ts_aerodynamics();
 	void generate_rover_ackermann_dynamics(const float throttle_cmd, const float steering_cmd, const float dt);
 	void sensor_step();
@@ -221,7 +222,7 @@ private:
 
 	float _u[NUM_ACTUATORS_MAX] {}; // thruster signals
 
-	enum class VehicleType {Quadcopter, FixedWing, TailsitterVTOL, StandardVTOL, Hexacopter, RoverAckermann, First = Quadcopter, Last = RoverAckermann}; // numbering dependent on parameter SIH_VEHICLE_TYPE
+	enum class VehicleType {Quadcopter, FixedWing, TailsitterVTOL, StandardVTOL, Hexacopter, RoverAckermann, Phoenix, First = Quadcopter, Last = Phoenix}; // numbering dependent on parameter SIH_VEHICLE_TYPE
 	VehicleType _vehicle = VehicleType::Quadcopter;
 
 	// aerodynamic segments for the fixedwing

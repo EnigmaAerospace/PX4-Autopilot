@@ -49,6 +49,7 @@ if(CONFIG_MODULES_SIMULATION_PWM_OUT_SIM)
 		1101_rc_plane_sih.hil
 		1102_tailsitter_duo_sih.hil
 		1103_standard_vtol_sih.hil
+		1105_phoenix_plane_sih.hil
 	)
 	if(CONFIG_MODULES_ROVER_ACKERMANN)
 		px4_add_romfs_files(
@@ -113,6 +114,7 @@ if(CONFIG_MODULES_FW_RATE_CONTROL)
 	px4_add_romfs_files(
 		# [2000, 2999] Standard planes
 		2100_standard_plane
+		2110_phoenix_plane
 		2106_albatross
 
 		# [3000, 3999] Flying wing
