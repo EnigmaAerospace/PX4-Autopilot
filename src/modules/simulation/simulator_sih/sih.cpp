@@ -305,6 +305,8 @@ void Sih::init_variables()
 	_w_B = Vector3f(0.0f, 0.0f, 0.0f);
 
 	_u[0] = _u[1] = _u[2] = _u[3] = 0.0f;
+
+	_gripper_closed = true; // gripper or not, assume it starts closed
 }
 
 void Sih::update_mass()
@@ -322,13 +324,13 @@ void Sih::update_mass()
 			}
 		}
 		// update the vehicle mass depending on whether a payload is attached
-		if (_has_gripper && _gripper_closed) {
+		if (_gripper_closed) {
 			_MASS = _VEHICLE_MASS + _PAYLOAD_MASS;
 
 		} else {
 			_MASS = _VEHICLE_MASS;
 		}
-	} else {
+	} else { // No gripper or payload
 		_MASS = _VEHICLE_MASS;
 	}
 
