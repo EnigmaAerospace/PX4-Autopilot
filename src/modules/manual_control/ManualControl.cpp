@@ -275,6 +275,14 @@ void ManualControl::processSwitches(hrt_abstime &now)
 						send_video_command();
 					}
 				}
+				// Misuse the payload power switch to send gripper commands for testing
+				if (switches.payload_power_switch != _previous_switches.payload_power_switch) {
+					if (switches.payload_power_switch == manual_control_switches_s::SWITCH_POS_ON) {
+						send_gripper_command(1); // Example action, replace with actual gripper action
+					} else if (switches.payload_power_switch == manual_control_switches_s::SWITCH_POS_OFF) {
+						send_gripper_command(0); // Example action, replace with actual gripper action
+					}
+				}
 
 #if defined(PAYLOAD_POWER_EN)
 
@@ -473,6 +481,17 @@ void ManualControl::send_camera_mode_command(CameraMode camera_mode)
 	command.param2 = static_cast<float>(camera_mode);
 	command.target_system = _system_id;
 	command.target_component = 100; // MAV_COMP_ID_CAMERA
+
+	uORB::Publication<vehicle_command_s> command_pub{ORB_ID(vehicle_command)};
+	command.timestamp = hrt_absolute_time();
+	command_pub.publish(command);
+}
+
+void ManualControl::send_gripper_command(const int32_t gripper_action)
+{
+	vehicle_command_s command{};
+	command.command = vehicle_command_s::VEHICLE_CMD_DO_GRIPPER;
+	command.param2 = static_cast<float>(gripper_action);
 
 	uORB::Publication<vehicle_command_s> command_pub{ORB_ID(vehicle_command)};
 	command.timestamp = hrt_absolute_time();

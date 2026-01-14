@@ -239,6 +239,19 @@ private:
 	AeroSeg _fin = AeroSeg(0.25, 0.18, 0.0f, matrix::Vector3f(-0.45f, 0.0f, -0.1f), -90.0f, -1.0f, 0.12f, RP);
 	AeroSeg _fuselage = AeroSeg(0.2, 0.8, 0.0f, matrix::Vector3f(0.0f, 0.0f, 0.0f), -90.0f);
 
+	// aerodynamic segments for the phoenix
+	static constexpr float PH_SPAN = 3.64f; 	// wing span [m]
+	static constexpr float PH_MAC = 0.38f; 	// wing mean aerodynamic chord [m]
+	static constexpr float PH_RP = 0.23f; 	// radius of the propeller [m]
+	AeroSeg _ph_wing_l = AeroSeg(PH_SPAN / 2.0f, PH_MAC, -4.0f, matrix::Vector3f(0.0f, -PH_SPAN / 3.0f, 0.0f), 3.0f,
+				  PH_SPAN / PH_MAC, PH_MAC / 4.0f);
+	AeroSeg _ph_wing_r = AeroSeg(PH_SPAN / 2.0f, PH_MAC, -4.0f, matrix::Vector3f(0.0f, PH_SPAN / 3.0f, 0.0f), -3.0f,
+				  PH_SPAN / PH_MAC, PH_MAC / 4.0f);
+	AeroSeg _ph_tailplane = AeroSeg(0.8f, 0.32f, 0.0f, matrix::Vector3f(-1.39f, 0.0f, 0.0f), 0.0f, -1.0f, 0.1f, PH_RP);
+	AeroSeg _ph_fin_l = AeroSeg(0.35, 0.32f, 0.0f, matrix::Vector3f(-1.4f, 0.0f, -0.4f), -90.0f, -1.0f, 0.12f, PH_RP);
+	AeroSeg _ph_fin_r = AeroSeg(0.35, 0.32f, 0.0f, matrix::Vector3f(-1.4f, 0.0f, 0.4f), -90.0f, -1.0f, 0.12f, PH_RP);
+	AeroSeg _ph_fuselage = AeroSeg(0.4, 1.4, 0.0f, matrix::Vector3f(0.0f, 0.0f, 0.0f), -90.0f);
+
 	// aerodynamic segments for the tailsitter
 	static constexpr const int NB_TS_SEG = 11;
 	static constexpr const float TS_AR = 3.13f;

@@ -99,6 +99,8 @@ private:
 	void send_photo_command();
 	void send_video_command();
 
+	void send_gripper_command(const int32_t gripper_action);
+
 	uORB::SubscriptionCallbackWorkItem _manual_control_input_subs[MAX_MANUAL_INPUT_COUNT] {
 		{this, ORB_ID(manual_control_input), 0},
 		{this, ORB_ID(manual_control_input), 1},

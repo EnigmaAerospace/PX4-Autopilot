@@ -315,10 +315,13 @@ void Sih::update_mass()
 		// update the gripper state
 		gripper_s gripper;
 		if (_gripper_sub.update(&gripper)) {
+			PX4_INFO("Gripper command: %d", gripper.command);
 			if (gripper.command == gripper_s::COMMAND_RELEASE) {
+				PX4_INFO("Gripper opened");
 				_gripper_closed = false;
 
 			} else if (gripper.command == gripper_s::COMMAND_GRAB) {
+				PX4_INFO("Gripper closed");
 				_gripper_closed = true; 
 
 			}
@@ -326,9 +329,11 @@ void Sih::update_mass()
 		// update the vehicle mass depending on whether a payload is attached
 		if (_gripper_closed) {
 			_MASS = _VEHICLE_MASS + _PAYLOAD_MASS;
+			//PX4_INFO("Payload attached. Total mass: %.2f kg", (double)_MASS);
 
 		} else {
 			_MASS = _VEHICLE_MASS;
+			//PX4_INFO("Payload released. Total mass: %.2f kg", (double)_MASS);
 		}
 	} else { // No gripper or payload
 		_MASS = _VEHICLE_MASS;
@@ -381,6 +386,7 @@ void Sih::generate_force_and_torques(const float dt)
 				 _Q_MAX * (+_u[0] - _u[1] + _u[2] - _u[3] + _u[4] - _u[5]));
 		_Fa_E = -_KDV * _v_E; // first order drag to slow down the aircraft
 		_Ma_B = -_KDW * _w_B; // first order angular damper
+
 
 	} else if (_vehicle == VehicleType::FixedWing) {
 		_T_B = Vector3f(_T_MAX * _u[3], 0.0f, 0.0f); 	// forward thruster
@@ -445,20 +451,22 @@ void Sih::generate_phoenix_aerodynamics(const float roll_cmd, const float pitch_
 	const Vector3f v_B = _q_E.rotateVectorInverse(_v_E);
 	const float &alt = _lla.altitude();
 
-	_wing_l.update_aero(v_B, _w_B, alt, roll_cmd * FLAP_MAX);
-	_wing_r.update_aero(v_B, _w_B, alt, -roll_cmd * FLAP_MAX);
+	_ph_wing_l.update_aero(v_B, _w_B, alt, roll_cmd * FLAP_MAX);
+	_ph_wing_r.update_aero(v_B, _w_B, alt, -roll_cmd * FLAP_MAX);
 
-	_tailplane.update_aero(v_B, _w_B, alt, -pitch_cmd * FLAP_MAX, _T_MAX * throttle_cmd);
-	_fin.update_aero(v_B, _w_B, alt, yaw_cmd * FLAP_MAX, _T_MAX * throttle_cmd);
-	_fuselage.update_aero(v_B, _w_B, alt);
+	_ph_tailplane.update_aero(v_B, _w_B, alt, -pitch_cmd * FLAP_MAX, _T_MAX * throttle_cmd);
+	_ph_fin_l.update_aero(v_B, _w_B, alt, yaw_cmd * FLAP_MAX, _T_MAX * throttle_cmd);
+	_ph_fin_r.update_aero(v_B, _w_B, alt, yaw_cmd * FLAP_MAX, _T_MAX * throttle_cmd); // fins share a yaw command
+	_ph_fuselage.update_aero(v_B, _w_B, alt);
 
+	
 	// sum of aerodynamic forces
-	const Vector3f Fa_B = _wing_l.get_Fa() + _wing_r.get_Fa() + _tailplane.get_Fa() + _fin.get_Fa() + _fuselage.get_Fa() -
+	const Vector3f Fa_B = _ph_wing_l.get_Fa() + _ph_wing_r.get_Fa() + _ph_tailplane.get_Fa() + _ph_fin_l.get_Fa() + _ph_fin_r.get_Fa() + _ph_fuselage.get_Fa() -
 			      _KDV * v_B;
 	_Fa_E = _q_E.rotateVector(Fa_B);
 
 	// aerodynamic moments
-	_Ma_B = _wing_l.get_Ma() + _wing_r.get_Ma() + _tailplane.get_Ma() + _fin.get_Ma() + _fuselage.get_Ma() - _KDW * _w_B;
+	_Ma_B = _ph_wing_l.get_Ma() + _ph_wing_r.get_Ma() + _ph_tailplane.get_Ma() + _ph_fin_l.get_Ma() + _ph_fin_r.get_Ma() + _ph_fuselage.get_Ma() - _KDW * _w_B;
 }
 
 void Sih::generate_ts_aerodynamics()
