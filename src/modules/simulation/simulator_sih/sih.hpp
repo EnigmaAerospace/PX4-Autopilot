@@ -167,7 +167,7 @@ private:
 	void send_dist_snsr(const hrt_abstime &time_now_us);
 	void publish_ground_truth(const hrt_abstime &time_now_us);
 	void generate_fw_aerodynamics(const float roll_cmd, const float pitch_cmd, const float yaw_cmd, const float thrust);
-	void generate_phoenix_aerodynamics(const float roll_cmd, const float pitch_cmd, const float yaw_cmd, const float thrust);
+	void generate_phoenix_aerodynamics(const float roll_r_cmd, const float roll_l_cmd, const float pitch_cmd, const float yaw_cmd, const float thrust);
 	void generate_ts_aerodynamics();
 	void generate_rover_ackermann_dynamics(const float throttle_cmd, const float steering_cmd, const float dt);
 	void sensor_step();

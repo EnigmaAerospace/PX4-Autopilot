@@ -347,11 +347,17 @@ void Sih::read_motors(const float dt)
 
 	if (_actuator_out_sub.update(&actuators_out)) {
 		_last_actuator_output_time = actuators_out.timestamp;
+		// log actuator outputs
+		// PX4_INFO("Actuators: %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f",
+		// 	 (double)actuators_out.output[0], (double)actuators_out.output[1], (double)actuators_out.output[2],
+		// 	 (double)actuators_out.output[3], (double)actuators_out.output[4], (double)actuators_out.output[5],
+		// 	 (double)actuators_out.output[6], (double)actuators_out.output[7], (double)actuators_out.output[8]);
+
 
 		for (int i = 0; i < NUM_ACTUATORS_MAX; i++) { // saturate the motor signals
 			if ((_vehicle == VehicleType::FixedWing && i < 3) 
 				|| (_vehicle == VehicleType::TailsitterVTOL && i > 3)
-				|| (_vehicle == VehicleType::Phoenix && i < 3)) {
+				|| (_vehicle == VehicleType::Phoenix && i < 4)) {
 				_u[i] = actuators_out.output[i];
 
 			} else {
@@ -395,10 +401,10 @@ void Sih::generate_force_and_torques(const float dt)
 		generate_fw_aerodynamics(_u[0], _u[1], _u[2], _u[3]);
 
 	} else if (_vehicle == VehicleType::Phoenix) {
-		_T_B = Vector3f(_T_MAX * _u[3], 0.0f, 0.0f); 	// forward thruster
+		_T_B = Vector3f(_T_MAX * _u[4], 0.0f, 0.0f); 	// forward thruster
 		// _Mt_B = Vector3f(_Q_MAX*_u[3], 0.0f,0.0f); 	// thruster torque
 		_Mt_B = Vector3f();
-		generate_phoenix_aerodynamics(_u[0], _u[1], _u[2], _u[3]);
+		generate_phoenix_aerodynamics(_u[0], _u[1], _u[2], _u[3], _u[4]);
 	} else if (_vehicle == VehicleType::TailsitterVTOL) {
 		_T_B = Vector3f(0.0f, 0.0f, -_T_MAX * (_u[0] + _u[1]));
 		_Mt_B = Vector3f(_L_ROLL * _T_MAX * (_u[1] - _u[0]), 0.0f, _Q_MAX * (_u[1] - _u[0]));
@@ -445,14 +451,15 @@ void Sih::generate_fw_aerodynamics(const float roll_cmd, const float pitch_cmd, 
 	_Ma_B = _wing_l.get_Ma() + _wing_r.get_Ma() + _tailplane.get_Ma() + _fin.get_Ma() + _fuselage.get_Ma() - _KDW * _w_B;
 }
 
-void Sih::generate_phoenix_aerodynamics(const float roll_cmd, const float pitch_cmd, const float yaw_cmd,
-				   const float throttle_cmd)
+void Sih::generate_phoenix_aerodynamics(const float roll_r_cmd, const float roll_l_cmd, 
+					const float pitch_cmd, const float yaw_cmd,
+					const float throttle_cmd)
 {
 	const Vector3f v_B = _q_E.rotateVectorInverse(_v_E);
 	const float &alt = _lla.altitude();
 
-	_ph_wing_l.update_aero(v_B, _w_B, alt, roll_cmd * FLAP_MAX);
-	_ph_wing_r.update_aero(v_B, _w_B, alt, -roll_cmd * FLAP_MAX);
+	_ph_wing_l.update_aero(v_B, _w_B, alt, roll_l_cmd * FLAP_MAX);
+	_ph_wing_r.update_aero(v_B, _w_B, alt, roll_r_cmd * FLAP_MAX);
 
 	_ph_tailplane.update_aero(v_B, _w_B, alt, -pitch_cmd * FLAP_MAX, _T_MAX * throttle_cmd);
 	_ph_fin_l.update_aero(v_B, _w_B, alt, yaw_cmd * FLAP_MAX, _T_MAX * throttle_cmd);
